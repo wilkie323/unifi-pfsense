@@ -4,7 +4,7 @@
 # Installs the Uni-Fi controller software on a FreeBSD machine (presumably running pfSense).
 
 # The latest version of UniFi:
-UNIFI_SOFTWARE_URL="http://dl.ubnt.com/unifi/5.9.29/UniFi.unix.zip"
+UNIFI_SOFTWARE_URL="http://dl.ubnt.com/unifi/5.14.23/UniFi.unix.zip"
 
 # The rc script associated with this branch or fork:
 RC_SCRIPT_URL="https://raw.githubusercontent.com/gozoinks/unifi-pfsense/master/rc.d/unifi.sh"
@@ -79,6 +79,21 @@ echo -n "Mounting new filesystems..."
 /sbin/mount -a
 echo " done."
 
+
+#remove mongodb34 - discontinued
+echo "Removing packages discontinued..."
+if [ `pkg info | grep -c mongodb-` -eq 1 ]; then
+	env ASSUME_ALWAYS_YES=YES /usr/sbin/pkg delete mongodb
+fi
+
+if [ `pkg info | grep -c mongodb34-` -eq 1 ]; then
+	env ASSUME_ALWAYS_YES=YES /usr/sbin/pkg delete mongodb34
+fi
+echo " done."
+
+
+
+
 # Install mongodb, OpenJDK, and unzip (required to unpack Ubiquiti's download):
 # -F skips a package if it's already installed, without throwing an error.
 echo "Installing required packages..."
@@ -93,29 +108,28 @@ AddPkg () {
  	pkgname=$1
  	pkginfo=`grep "\"name\":\"$pkgname\"" packagesite.yaml`
  	pkgvers=`echo $pkginfo | pcregrep -o1 '"version":"(.*?)"' | head -1`
-	
+
 	# compare version for update/install
  	if [ `pkg info | grep -c $pkgname-$pkgvers` -eq 1 ]; then
 			echo "Package $pkgname-$pkgvers already installed."
 		else
 			env ASSUME_ALWAYS_YES=YES /usr/sbin/pkg add -f ${FREEBSD_PACKAGE_URL}${pkgname}-${pkgvers}.txz
-			
+
 			# if update openjdk8 then force detele snappyjava to reinstall for new version of openjdk
-			if [ "$pkgname" == "openjdk8" ]; then 
+			if [ "$pkgname" == "openjdk8" ]; then
 				env ASSUME_ALWAYS_YES=YES /usr/sbin/pkg delete snappyjava
 			fi
 		fi
 }
-	
+
 AddPkg snappy
 AddPkg cyrus-sasl
 AddPkg xorgproto
-AddPkg mkfontdir
-AddPkg python2
+AddPkg python37
 AddPkg v8
 AddPkg icu
 AddPkg boost-libs
-AddPkg mongodb34
+AddPkg mongodb36
 AddPkg unzip
 AddPkg pcre
 AddPkg alsa-lib
@@ -135,7 +149,6 @@ AddPkg libXi
 AddPkg libXt
 AddPkg libfontenc
 AddPkg mkfontscale
-AddPkg mkfontdir
 AddPkg dejavu
 AddPkg libXtst
 AddPkg libXrender
